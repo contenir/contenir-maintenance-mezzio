@@ -20,13 +20,16 @@ namespace Contenir\Maintenance\Mezzio;
 final class ConfigProvider
 {
     /**
-     * @return array{dependencies: array{factories: array<class-string, class-string>}}
+     * Absolute path to the package's bundled default 503 body template.
+     *
+     * Rendered by the factory via include + output buffering when the
+     * middleware is built, so PHP inside the file is evaluated once per
+     * container. Sites override it with `maintenance.body_template_path`
+     * (any extension) or `maintenance.body_template` (inline string).
      */
-    public function __invoke(): array
+    public static function defaultBodyTemplatePath(): string
     {
-        return [
-            'dependencies' => $this->getDependencies(),
-        ];
+        return __DIR__ . '/../templates/maintenance.phtml';
     }
 
     /**
@@ -42,15 +45,12 @@ final class ConfigProvider
     }
 
     /**
-     * Absolute path to the package's bundled default 503 body template.
-     *
-     * Rendered by the factory via include + output buffering when the
-     * middleware is built, so PHP inside the file is evaluated once per
-     * container. Sites override it with `maintenance.body_template_path`
-     * (any extension) or `maintenance.body_template` (inline string).
+     * @return array{dependencies: array{factories: array<class-string, class-string>}}
      */
-    public static function defaultBodyTemplatePath(): string
+    public function __invoke(): array
     {
-        return __DIR__ . '/../templates/maintenance.phtml';
+        return [
+            'dependencies' => $this->getDependencies(),
+        ];
     }
 }

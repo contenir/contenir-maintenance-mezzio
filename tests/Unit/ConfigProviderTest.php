@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Contenir\Maintenance\Mezzio\Test\Unit;
+namespace Contenir\Maintenance\Mezzio\Tests\Unit;
 
 use Contenir\Maintenance\Mezzio\ConfigProvider;
 use Contenir\Maintenance\Mezzio\Factory\MaintenanceMiddlewareFactory;
@@ -15,16 +15,6 @@ use function array_keys;
 #[Group('unit')]
 final class ConfigProviderTest extends TestCase
 {
-    public function testRegistersTheMiddlewareFactoryAsADependency(): void
-    {
-        $config = (new ConfigProvider())();
-
-        self::assertSame(
-            [MaintenanceMiddleware::class => MaintenanceMiddlewareFactory::class],
-            $config['dependencies']['factories'],
-        );
-    }
-
     public function testContributesNoMaintenanceKeySoSiteConfigIsTheOnlySource(): void
     {
         $config = (new ConfigProvider())();
@@ -35,5 +25,15 @@ final class ConfigProviderTest extends TestCase
     public function testDefaultBodyTemplatePathPointsAtTheBundledTemplate(): void
     {
         self::assertStringEndsWith('/templates/maintenance.phtml', ConfigProvider::defaultBodyTemplatePath());
+    }
+
+    public function testRegistersTheMiddlewareFactoryAsADependency(): void
+    {
+        $config = (new ConfigProvider())();
+
+        self::assertSame(
+            [MaintenanceMiddleware::class => MaintenanceMiddlewareFactory::class],
+            $config['dependencies']['factories'],
+        );
     }
 }

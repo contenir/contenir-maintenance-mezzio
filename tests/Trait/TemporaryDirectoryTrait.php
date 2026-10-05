@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Contenir\Maintenance\Mezzio\Test\Trait;
+namespace Contenir\Maintenance\Mezzio\Tests\Trait;
 
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
@@ -26,7 +26,7 @@ use function unlink;
  * Gives each test its own scratch directory, removed again in tearDown along
  * with any change to the working directory.
  */
-trait UsesTemporaryDirectory
+trait TemporaryDirectoryTrait
 {
     private string $temporaryDirectory;
 
@@ -68,6 +68,11 @@ trait UsesTemporaryDirectory
         rmdir($this->temporaryDirectory);
     }
 
+    private function changeWorkingDirectoryToTemporary(): void
+    {
+        chdir($this->temporaryDirectory);
+    }
+
     private function temporaryPath(string $relativePath): string
     {
         return "{$this->temporaryDirectory}/{$relativePath}";
@@ -83,10 +88,5 @@ trait UsesTemporaryDirectory
         file_put_contents($path, $contents);
 
         return $path;
-    }
-
-    private function changeWorkingDirectoryToTemporary(): void
-    {
-        chdir($this->temporaryDirectory);
     }
 }
