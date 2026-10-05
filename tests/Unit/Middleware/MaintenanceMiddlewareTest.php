@@ -11,6 +11,7 @@ use Contenir\Maintenance\Repository\InMemoryRepository;
 use Laminas\Diactoros\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -48,24 +49,27 @@ final class MaintenanceMiddlewareTest extends TestCase
         ];
     }
 
-    public function testDelegatesToTheHandlerWhenMaintenanceIsInactive(): void
+    #[Test]
+    public function delegatesToTheHandlerWhenMaintenanceIsInactive(): void
     {
         $response = $this->process(MaintenanceState::inactive());
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testDelegatesWhenTheBypassAllowsTheRequest(): void
+    #[Test]
+    public function delegatesWhenTheBypassAllowsTheRequest(): void
     {
         $response = $this->process(
             MaintenanceState::active('m'),
             static fn(ServerRequestInterface $request): bool => true,
         );
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testDoesNotConsultTheBypassWhenMaintenanceIsInactive(): void
+    #[Test]
+    public function doesNotConsultTheBypassWhenMaintenanceIsInactive(): void
     {
         $consulted = false;
         $this->process(
@@ -77,26 +81,29 @@ final class MaintenanceMiddlewareTest extends TestCase
             },
         );
 
-        self::assertFalse($consulted);
+        static::assertFalse($consulted);
     }
 
+    #[Test]
     #[DataProvider('unsafeMessageProvider')]
-    public function testEscapesTheMessage(string $message, string $expected): void
+    public function escapesTheMessage(string $message, string $expected): void
     {
         $response = $this->process(MaintenanceState::active($message), bodyTemplate: '%s');
 
-        self::assertSame($expected, (string) $response->getBody());
+        static::assertSame($expected, (string) $response->getBody());
     }
 
-    public function testForbidsCachingTheResponse(): void
+    #[Test]
+    public function forbidsCachingTheResponse(): void
     {
         $response = $this->process(MaintenanceState::active('m'));
 
-        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        static::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
     }
 
+    #[Test]
     #[DataProvider('bypassHeaderProvider')]
-    public function testHandsTheRequestToTheBypass(ServerRequestInterface $request, int $expectedStatus): void
+    public function handsTheRequestToTheBypass(ServerRequestInterface $request, int $expectedStatus): void
     {
         $response = $this->process(
             MaintenanceState::active('m'),
@@ -104,59 +111,66 @@ final class MaintenanceMiddlewareTest extends TestCase
             $request,
         );
 
-        self::assertSame($expectedStatus, $response->getStatusCode());
+        static::assertSame($expectedStatus, $response->getStatusCode());
     }
 
-    public function testRendersTheDefaultBodyTemplate(): void
+    #[Test]
+    public function rendersTheDefaultBodyTemplate(): void
     {
         $response = $this->process(MaintenanceState::active('Back at noon'));
 
-        self::assertStringContainsString('<p>Back at noon</p>', (string) $response->getBody());
+        static::assertStringContainsString('<p>Back at noon</p>', (string) $response->getBody());
     }
 
-    public function testRendersTheMessageIntoTheBodyTemplate(): void
+    #[Test]
+    public function rendersTheMessageIntoTheBodyTemplate(): void
     {
         $response = $this->process(MaintenanceState::active('Back at noon'), bodyTemplate: 'MAINT: %s');
 
-        self::assertSame('MAINT: Back at noon', (string) $response->getBody());
+        static::assertSame('MAINT: Back at noon', (string) $response->getBody());
     }
 
-    public function testRespondsWithServiceUnavailableWhenMaintenanceIsActive(): void
+    #[Test]
+    public function respondsWithServiceUnavailableWhenMaintenanceIsActive(): void
     {
         $response = $this->process(MaintenanceState::active('Down for upgrade'));
 
-        self::assertSame(503, $response->getStatusCode());
+        static::assertSame(503, $response->getStatusCode());
     }
 
-    public function testRespondsWithServiceUnavailableWhenTheBypassRefusesTheRequest(): void
+    #[Test]
+    public function respondsWithServiceUnavailableWhenTheBypassRefusesTheRequest(): void
     {
         $response = $this->process(
             MaintenanceState::active('m'),
             static fn(ServerRequestInterface $request): bool => false,
         );
 
-        self::assertSame(503, $response->getStatusCode());
+        static::assertSame(503, $response->getStatusCode());
     }
 
-    public function testSendsTheConfiguredRetryAfter(): void
+    #[Test]
+    public function sendsTheConfiguredRetryAfter(): void
     {
         $response = $this->process(MaintenanceState::active('m'), retryAfter: 1800);
 
-        self::assertSame('1800', $response->getHeaderLine('Retry-After'));
+        static::assertSame('1800', $response->getHeaderLine('Retry-After'));
     }
 
-    public function testSendsTheDefaultRetryAfter(): void
+    #[Test]
+    public function sendsTheDefaultRetryAfter(): void
     {
         $response = $this->process(MaintenanceState::active('m'));
 
-        self::assertSame('600', $response->getHeaderLine('Retry-After'));
+        static::assertSame('600', $response->getHeaderLine('Retry-After'));
     }
 
-    public function testServesTheResponseAsUtf8Html(): void
+    #[Test]
+    public function servesTheResponseAsUtf8Html(): void
     {
         $response = $this->process(MaintenanceState::active('m'));
 
-        self::assertSame('text/html; charset=utf-8', $response->getHeaderLine('Content-Type'));
+        static::assertSame('text/html; charset=utf-8', $response->getHeaderLine('Content-Type'));
     }
 
     /**
