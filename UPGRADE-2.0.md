@@ -20,6 +20,17 @@ No code or configuration changes are needed. `ConfigProvider`,
 keep their signatures, constants and behaviour, and every
 `config['maintenance']` key means what it did in 0.1.
 
+## Final classes
+
+Every concrete class is `final`, as it already was in 0.1. To change
+behaviour, use the extension points instead of subclassing:
+
+- `Contenir\Maintenance\MaintenanceRepositoryInterface` (registered in the
+  container) for a different source of the state,
+- `maintenance.bypass` to let some requests through,
+- `maintenance.body_template` / `body_template_path` for the markup, or your
+  own factory for the `MaintenanceMiddleware` service.
+
 ## Behaviour change
 
 A `body_template_path` that stats as a readable file but cannot be opened
