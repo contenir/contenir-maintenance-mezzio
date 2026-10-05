@@ -158,10 +158,24 @@ read as-is. The bundled `templates/maintenance.phtml` is a good starting
 point. For a short body, set `body_template` to an inline string instead;
 it wins over `body_template_path`.
 
-Either way the result is a `sprintf` format string with a single `%s` for
-the escaped message text, and no other unescaped `%`. If you need anything
-more elaborate (full layout, template renderer, translation), replace the
-`MaintenanceMiddleware` service with your own factory.
+Either way the result is a `sprintf` format string. It receives two
+arguments, and any other `%` must be written as `%%`:
+
+| Placeholder    | Value                                                                                                                                                 |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `%s` or `%1$s` | The HTML-escaped message                                                                                                                              |
+| `%2$s`         | `since`, when maintenance started, as ISO 8601 (`2026-05-05T03:14:15+00:00`); an empty string when the state has no `since` or it could not be parsed |
+
+A template that only uses `%s` is unaffected by `since`. To show it:
+
+```php
+'body_template' => '<h1>Down for maintenance</h1><p>%1$s</p>'
+    . '<p>Down since <time datetime="%2$s">%2$s</time></p>',
+```
+
+If you need anything more elaborate (full layout, template renderer,
+translation), replace the `MaintenanceMiddleware` service with your own
+factory.
 
 ## Options
 
@@ -201,7 +215,8 @@ $middleware = new MaintenanceMiddleware(
 When the repository reports maintenance as active and the bypass does not
 return `true`, `process()` returns a `503` `text/html; charset=utf-8` response
 with `Retry-After` and `Cache-Control: no-store`. The admin's message is
-HTML-escaped and put in place of the template's `%s`. Otherwise the request
+HTML-escaped and put in place of the template's `%s`, and `since` in place
+of `%2$s`. Otherwise the request
 goes to the next handler.
 
 ## Development

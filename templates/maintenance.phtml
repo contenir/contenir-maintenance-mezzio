@@ -8,6 +8,10 @@
  * placeholder for the escaped admin message and no other unescaped percent
  * sign may appear in the document.
  *
+ * A site-owned copy may also use `%2$s`, the time maintenance started as
+ * ISO 8601 (e.g. `<time datetime="%2$s">`); it is an empty string when the
+ * state has no `since`. This bundled page does not show it.
+ *
  * Override by setting `maintenance.body_template_path` to a site-owned path
  * (any extension; .phtml/.php is evaluated as PHP, anything else is read
  * raw), or `maintenance.body_template` to an inline string.

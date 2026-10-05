@@ -4,11 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.0] - Unreleased
 
 ### Added
 
 - Infection mutation testing in CI, MSI 100%.
+- The maintenance state's `since` time reaches the response body: the body
+  template receives it as a second `sprintf` argument, `%2$s`, formatted as
+  ISO 8601, or an empty string when the state has no `since`. Templates that
+  only use `%s` render exactly as before.
 
 ## [2.0.0] - Unreleased
 
