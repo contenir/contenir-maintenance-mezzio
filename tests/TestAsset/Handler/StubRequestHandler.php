@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Contenir\Maintenance\Mezzio\Test\TestAsset\Handler;
+namespace Contenir\Maintenance\Mezzio\Tests\TestAsset\Handler;
 
 use Laminas\Diactoros\Response\TextResponse;
 use Override;

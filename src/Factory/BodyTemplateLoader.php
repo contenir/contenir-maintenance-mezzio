@@ -18,6 +18,8 @@ use function ob_end_clean;
 use function ob_get_contents;
 use function ob_start;
 use function pathinfo;
+use function restore_error_handler;
+use function set_error_handler;
 use function sprintf;
 use function strtolower;
 
@@ -40,6 +42,28 @@ use const PATHINFO_EXTENSION;
  */
 final class BodyTemplateLoader
 {
+    private static function render(string $path): string
+    {
+        return (static function (string $template): string {
+            ob_start();
+            try {
+                include $template;
+
+                return (string) ob_get_contents();
+            } finally {
+                ob_end_clean();
+            }
+        })($path);
+    }
+
+    private static function unreadable(string $path): RuntimeException
+    {
+        return new RuntimeException(sprintf(
+            'contenir/maintenance-mezzio: body_template_path "%s" is not a readable file.',
+            $path,
+        ));
+    }
+
     /**
      * @param array<array-key, mixed> $maintenance The site's `config['maintenance']`.
      *
@@ -71,21 +95,6 @@ final class BodyTemplateLoader
     }
 
     /**
-     * @throws RuntimeException When the value is not a string.
-     */
-    private function requireString(mixed $value): string
-    {
-        if (! is_string($value)) {
-            throw new RuntimeException(sprintf(
-                'contenir/maintenance-mezzio: config[maintenance][body_template] must be a string, got %s.',
-                get_debug_type($value),
-            ));
-        }
-
-        return $value;
-    }
-
-    /**
      * For .phtml and .php paths the file is included under output buffering
      * inside an isolated closure, so its PHP runs once when the middleware is
      * built without seeing loader-scope variables. Any other extension is
@@ -104,30 +113,29 @@ final class BodyTemplateLoader
             return self::render($path);
         }
 
-        $content = file_get_contents($path);
+        set_error_handler(static fn(): bool => true);
+
+        try {
+            $content = file_get_contents($path);
+        } finally {
+            restore_error_handler();
+        }
 
         return false === $content ? throw self::unreadable($path) : $content;
     }
 
-    private static function render(string $path): string
+    /**
+     * @throws RuntimeException When the value is not a string.
+     */
+    private function requireString(mixed $value): string
     {
-        return (static function (string $template): string {
-            ob_start();
-            try {
-                include $template;
+        if (! is_string($value)) {
+            throw new RuntimeException(sprintf(
+                'contenir/maintenance-mezzio: config[maintenance][body_template] must be a string, got %s.',
+                get_debug_type($value),
+            ));
+        }
 
-                return (string) ob_get_contents();
-            } finally {
-                ob_end_clean();
-            }
-        })($path);
-    }
-
-    private static function unreadable(string $path): RuntimeException
-    {
-        return new RuntimeException(sprintf(
-            'contenir/maintenance-mezzio: body_template_path "%s" is not a readable file.',
-            $path,
-        ));
+        return $value;
     }
 }

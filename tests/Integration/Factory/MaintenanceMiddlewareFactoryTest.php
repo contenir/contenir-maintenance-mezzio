@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Contenir\Maintenance\Mezzio\Test\Integration\Factory;
+namespace Contenir\Maintenance\Mezzio\Tests\Integration\Factory;
 
 use Contenir\Maintenance\MaintenanceRepositoryInterface;
 use Contenir\Maintenance\MaintenanceState;
 use Contenir\Maintenance\Mezzio\Factory\MaintenanceMiddlewareFactory;
 use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
-use Contenir\Maintenance\Mezzio\Test\TestAsset\Container\ArrayContainer;
-use Contenir\Maintenance\Mezzio\Test\TestAsset\Handler\StubRequestHandler;
-use Contenir\Maintenance\Mezzio\Test\Trait\UsesTemporaryDirectory;
+use Contenir\Maintenance\Mezzio\Tests\TestAsset\Container\ArrayContainer;
+use Contenir\Maintenance\Mezzio\Tests\TestAsset\Handler\StubRequestHandler;
+use Contenir\Maintenance\Mezzio\Tests\Trait\TemporaryDirectoryTrait;
 use Contenir\Maintenance\Repository\FileRepository;
 use Contenir\Maintenance\Repository\InMemoryRepository;
 use Laminas\Diactoros\ServerRequest;
@@ -27,51 +27,29 @@ use function rmdir;
 #[Group('factory')]
 final class MaintenanceMiddlewareFactoryTest extends TestCase
 {
-    use UsesTemporaryDirectory;
-
-    protected function setUp(): void
-    {
-        $this->setUpTemporaryDirectory();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->tearDownTemporaryDirectory();
-    }
+    use TemporaryDirectoryTrait;
 
     /**
-     * @param array<string, mixed> $services
+     * @return array<string, array{array<string, mixed>}>
      */
-    private function build(array $services): MaintenanceMiddleware
+    public static function missingConfigProvider(): array
     {
-        return (new MaintenanceMiddlewareFactory())(new ArrayContainer($services));
+        return [
+            'no config service'           => [[]],
+            'config is not an array'      => [['config' => 'not an array']],
+            'no maintenance key'          => [['config' => []]],
+            'maintenance is not an array' => [['config' => ['maintenance' => 'on']]],
+        ];
     }
 
-    private function dispatch(MaintenanceMiddleware $middleware): ResponseInterface
+    #[DataProvider('missingConfigProvider')]
+    public function testBuildsWithDefaultsWhenTheSiteHasNoMaintenanceConfig(array $services): void
     {
-        return $middleware->process(new ServerRequest(), new StubRequestHandler());
-    }
+        $this->changeWorkingDirectoryToTemporary();
 
-    private function stateFile(): string
-    {
-        return $this->temporaryPath('shared/maintenance.local.php');
-    }
+        $response = $this->dispatch($this->build($services));
 
-    private function saveState(string $file, MaintenanceState $state): void
-    {
-        (new FileRepository($file))->save($state);
-    }
-
-    public function testReadsTheStateFileNamedByTheFileOption(): void
-    {
-        $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');
-        $this->saveState($this->stateFile(), MaintenanceState::active('Down for upgrade'));
-
-        $response = $this->dispatch($this->build([
-            'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => 'MAINT: %s']],
-        ]));
-
-        self::assertSame([503, 'MAINT: Down for upgrade'], [$response->getStatusCode(), (string) $response->getBody()]);
+        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
     public function testDefaultsToTheStateFileUnderTheWorkingDirectory(): void
@@ -90,6 +68,18 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         $response = $this->dispatch($this->build([
             'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => '%s']],
         ]));
+
+        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+    }
+
+    public function testFallsBackToARelativeStateFileWhenTheWorkingDirectoryIsGone(): void
+    {
+        $vanished = $this->temporaryPath('vanished');
+        mkdir($vanished);
+        chdir($vanished);
+        rmdir($vanished);
+
+        $response = $this->dispatch($this->build(['config' => ['maintenance' => ['body_template' => '%s']]]));
 
         self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
@@ -123,6 +113,18 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
+    public function testReadsTheStateFileNamedByTheFileOption(): void
+    {
+        $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');
+        $this->saveState($this->stateFile(), MaintenanceState::active('Down for upgrade'));
+
+        $response = $this->dispatch($this->build([
+            'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => 'MAINT: %s']],
+        ]));
+
+        self::assertSame([503, 'MAINT: Down for upgrade'], [$response->getStatusCode(), (string) $response->getBody()]);
+    }
+
     public function testRendersTheBundledTemplateWhenNoBodyTemplateIsConfigured(): void
     {
         $response = $this->dispatch($this->build([
@@ -132,38 +134,36 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         self::assertStringContainsString('role="status">Back at noon</div>', (string) $response->getBody());
     }
 
-    public function testFallsBackToARelativeStateFileWhenTheWorkingDirectoryIsGone(): void
+    protected function setUp(): void
     {
-        $vanished = $this->temporaryPath('vanished');
-        mkdir($vanished);
-        chdir($vanished);
-        rmdir($vanished);
-
-        $response = $this->dispatch($this->build(['config' => ['maintenance' => ['body_template' => '%s']]]));
-
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        $this->setUpTemporaryDirectory();
     }
 
-    #[DataProvider('missingConfigProvider')]
-    public function testBuildsWithDefaultsWhenTheSiteHasNoMaintenanceConfig(array $services): void
+    protected function tearDown(): void
     {
-        $this->changeWorkingDirectoryToTemporary();
-
-        $response = $this->dispatch($this->build($services));
-
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        $this->tearDownTemporaryDirectory();
     }
 
     /**
-     * @return array<string, array{array<string, mixed>}>
+     * @param array<string, mixed> $services
      */
-    public static function missingConfigProvider(): array
+    private function build(array $services): MaintenanceMiddleware
     {
-        return [
-            'no config service'           => [[]],
-            'config is not an array'      => [['config' => 'not an array']],
-            'no maintenance key'          => [['config' => []]],
-            'maintenance is not an array' => [['config' => ['maintenance' => 'on']]],
-        ];
+        return (new MaintenanceMiddlewareFactory())(new ArrayContainer($services));
+    }
+
+    private function dispatch(MaintenanceMiddleware $middleware): ResponseInterface
+    {
+        return $middleware->process(new ServerRequest(), new StubRequestHandler());
+    }
+
+    private function saveState(string $file, MaintenanceState $state): void
+    {
+        (new FileRepository($file))->save($state);
+    }
+
+    private function stateFile(): string
+    {
+        return $this->temporaryPath('shared/maintenance.local.php');
     }
 }

@@ -8,6 +8,7 @@ use Closure;
 use Contenir\Maintenance\MaintenanceRepositoryInterface;
 use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
 use Contenir\Maintenance\Repository\FileRepository;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
@@ -38,21 +39,6 @@ final class MaintenanceMiddlewareFactory
     public const string DEFAULT_STATE_FILE = '/config/autoload/maintenance.local.php';
 
     /**
-     * @throws RuntimeException When the maintenance config holds an invalid value.
-     */
-    public function __invoke(ContainerInterface $container): MaintenanceMiddleware
-    {
-        $maintenance = $this->maintenanceConfig($container->has('config') ? $container->get('config') : []);
-
-        return new MaintenanceMiddleware(
-            repository: $this->resolveRepository($container, $maintenance['file'] ?? null),
-            retryAfter: $this->resolveRetryAfter($maintenance),
-            bodyTemplate: (new BodyTemplateLoader())->resolve($maintenance),
-            bypass: $this->resolveBypass($maintenance['bypass'] ?? null),
-        );
-    }
-
-    /**
      * @return array<array-key, mixed>
      */
     private function maintenanceConfig(mixed $config): array
@@ -65,6 +51,29 @@ final class MaintenanceMiddlewareFactory
     }
 
     /**
+     * The callable is wrapped so that only a strict `true` lets a request
+     * through, whatever the site's callable is declared to return.
+     *
+     * @return (Closure(ServerRequestInterface): bool)|null
+     *
+     * @throws RuntimeException When the value is neither null nor callable.
+     */
+    private function resolveBypass(mixed $bypass): ?Closure
+    {
+        if (null === $bypass) {
+            return null;
+        }
+
+        if (! is_callable($bypass)) {
+            throw new RuntimeException(
+                'contenir/maintenance-mezzio: config[maintenance][bypass] must be callable or null.',
+            );
+        }
+
+        return static fn(ServerRequestInterface $request): bool => true === $bypass($request);
+    }
+
+    /**
      * A repository registered in the container wins. Otherwise the state file
      * is read through a FileRepository on every request: Mezzio caches the
      * merged config in production, so `$config['maintenance']['state']` would
@@ -72,6 +81,7 @@ final class MaintenanceMiddlewareFactory
      * admin toggles until it was cleared.
      *
      * @throws RuntimeException When the file option is not a non-empty string.
+     * @throws ContainerExceptionInterface When the registered repository cannot be built.
      */
     private function resolveRepository(ContainerInterface $container, mixed $file): MaintenanceRepositoryInterface
     {
@@ -115,25 +125,18 @@ final class MaintenanceMiddlewareFactory
     }
 
     /**
-     * The callable is wrapped so that only a strict `true` lets a request
-     * through, whatever the site's callable is declared to return.
-     *
-     * @return (Closure(ServerRequestInterface): bool)|null
-     *
-     * @throws RuntimeException When the value is neither null nor callable.
+     * @throws RuntimeException When the maintenance config holds an invalid value.
+     * @throws ContainerExceptionInterface When a service the factory reads cannot be built.
      */
-    private function resolveBypass(mixed $bypass): ?Closure
+    public function __invoke(ContainerInterface $container): MaintenanceMiddleware
     {
-        if (null === $bypass) {
-            return null;
-        }
+        $maintenance = $this->maintenanceConfig($container->has('config') ? $container->get('config') : []);
 
-        if (! is_callable($bypass)) {
-            throw new RuntimeException(
-                'contenir/maintenance-mezzio: config[maintenance][bypass] must be callable or null.',
-            );
-        }
-
-        return static fn(ServerRequestInterface $request): bool => true === $bypass($request);
+        return new MaintenanceMiddleware(
+            repository: $this->resolveRepository($container, $maintenance['file'] ?? null),
+            retryAfter: $this->resolveRetryAfter($maintenance),
+            bodyTemplate: (new BodyTemplateLoader())->resolve($maintenance),
+            bypass: $this->resolveBypass($maintenance['bypass'] ?? null),
+        );
     }
 }

@@ -2,27 +2,22 @@ extends = "vendor/php-db/phpdb-qa-tools/mago.toml"
 php-version = "8.3.0"
 
 [source]
-paths = ["src", "test"]
+paths = ["src", "tests"]
 includes = ["vendor"]
 
 [formatter]
-# Methods stay where the author put them; reading order carries meaning that
-# alphabetical order does not.
-sort-class-methods = false
+# Keep `(new Foo())->bar()`: CI formats under each job's PHP version, and the
+# unparenthesised form PHP 8.4+ allows does not parse on 8.3, the minimum.
+parentheses-around-new-in-member-access = true
 
 [linter.rules]
-# Tests follow the house PHPUnit standard: behaviour-named test* methods and
-# self::assert*() calls, which these two rules would rewrite throughout.
+# The shared base excludes "test/"; this repository keeps its suites under "tests/".
+too-many-methods = { exclude = ["tests/"] }
+# The suites predate the #[Test] / static::assert*() convention and still use
+# behaviour-named test* methods with self::assert*(). Converting them is a
+# mechanical follow-up; until then these two rules would flag every test.
 prefer-test-attribute = { enabled = false }
 assertion-style = { enabled = false }
-# Shared test setup traits are named for what they do (UsesTemporaryDirectory),
-# per the house PHPUnit standard, without a Trait suffix.
-trait-name = { enabled = false }
 
 [analyzer]
-# Exceptions that bubble up transparently from the container, not ones this
-# package raises itself.
-unchecked-exceptions = [
-    "Psr\\Container\\ContainerExceptionInterface",
-    "Psr\\Container\\NotFoundExceptionInterface",
-]
+excludes = ["tests"]

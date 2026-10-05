@@ -1,10 +1,22 @@
 # contenir/maintenance-mezzio
 
+[![Continuous Integration](https://github.com/contenir/maintenance-mezzio/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/contenir/maintenance-mezzio/actions/workflows/continuous-integration.yml)
+[![codecov](https://codecov.io/gh/contenir/maintenance-mezzio/graph/badge.svg)](https://codecov.io/gh/contenir/maintenance-mezzio)
+
 Mezzio adapter for [`contenir/maintenance`](https://github.com/contenir/maintenance).
 
 When the admin (Contenir CMS) toggles maintenance mode, this adapter's
 PSR-15 middleware answers every request in the consuming Site with a 503
 response, until the flag is cleared.
+
+## Requirements
+
+- PHP 8.3, 8.4 or 8.5
+- `contenir/maintenance` 0.1 or 2.x, `contenir/config` 0.2 or 2.x
+- `laminas/laminas-diactoros` 3.x and the PSR-7, PSR-11 and PSR-15 interfaces
+
+The 0.x releases remain available from the `0.x` branch and `v0.*` tags; see
+[UPGRADE-2.0.md](UPGRADE-2.0.md).
 
 ## Install
 
@@ -160,3 +172,53 @@ more elaborate (full layout, template renderer, translation), replace the
 | `bypass`             | `null`                                                | `callable(ServerRequestInterface): bool`              |
 | `body_template`      | unset                                                 | Inline `sprintf` body; wins over the path             |
 | `body_template_path` | bundled `templates/maintenance.phtml`                 | Body template file; `null` uses a minimal inline body |
+
+## Public API
+
+| Class | Purpose |
+|-------|---------|
+| `ConfigProvider` | `__invoke()` and `getDependencies()` register the middleware factory. It adds no `maintenance` key, so the site's config is the only source of options. `defaultBodyTemplatePath()` returns the bundled template's absolute path. |
+| `Factory\MaintenanceMiddlewareFactory` | Builds the middleware from `config['maintenance']` (options above). `DEFAULT_STATE_FILE` is the state file path relative to the working directory. Invalid options throw `RuntimeException` when the container builds the middleware. |
+| `Middleware\MaintenanceMiddleware` | The PSR-15 middleware. `DEFAULT_RETRY_AFTER` (600) and `DEFAULT_BODY_TEMPLATE` (a minimal inline page) are its defaults. |
+
+`Factory\BodyTemplateLoader` is internal.
+
+The middleware can also be built by hand, for example in a site's own factory:
+
+```php
+use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
+use Contenir\Maintenance\Repository\FileRepository;
+use Psr\Http\Message\ServerRequestInterface;
+
+$middleware = new MaintenanceMiddleware(
+    repository: new FileRepository('/var/www/shared/maintenance.local.php'),
+    retryAfter: 1800,
+    bodyTemplate: '<!doctype html><title>Back soon</title><p>%s</p>',
+    bypass: static fn (ServerRequestInterface $request): bool => $request->hasHeader('X-Ops'),
+);
+```
+
+When the repository reports maintenance as active and the bypass does not
+return `true`, `process()` returns a `503` `text/html; charset=utf-8` response
+with `Retry-After` and `Cache-Control: no-store`. The admin's message is
+HTML-escaped and put in place of the template's `%s`. Otherwise the request
+goes to the next handler.
+
+## Development
+
+The QA toolchain is [php-db/phpdb-qa-tools](https://github.com/php-db/phpdb-qa-tools).
+[Mago](https://mago.carthage.software/) is a standalone binary, installed
+separately (`brew install mago`).
+
+```bash
+composer check             # everything below
+composer cs-check          # mago format --check && mago lint
+composer static-analysis   # mago analyze
+composer test              # unit suite: middleware and factory with in-memory doubles, no I/O
+composer test-integration  # integration suite: real template and state files in a temp directory
+composer test-coverage     # both suites, clover.xml for Codecov
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
