@@ -8,6 +8,7 @@ use Contenir\Maintenance\Mezzio\Factory\BodyTemplateLoader;
 use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -39,26 +40,29 @@ final class BodyTemplateLoaderTest extends TestCase
         ];
     }
 
+    #[Test]
     #[DataProvider('blankPathProvider')]
-    public function testFallsBackToTheInlineDefaultWhenThePathIsBlanked(mixed $path): void
+    public function fallsBackToTheInlineDefaultWhenThePathIsBlanked(mixed $path): void
     {
         $template = (new BodyTemplateLoader())->resolve(['body_template_path' => $path]);
 
-        self::assertSame(MaintenanceMiddleware::DEFAULT_BODY_TEMPLATE, $template);
+        static::assertSame(MaintenanceMiddleware::DEFAULT_BODY_TEMPLATE, $template);
     }
 
-    public function testInlineBodyTemplateWinsOverBodyTemplatePath(): void
+    #[Test]
+    public function inlineBodyTemplateWinsOverBodyTemplatePath(): void
     {
         $template = (new BodyTemplateLoader())->resolve([
             'body_template'      => 'INLINE: %s',
             'body_template_path' => '/this/path/does/not/exist.html',
         ]);
 
-        self::assertSame('INLINE: %s', $template);
+        static::assertSame('INLINE: %s', $template);
     }
 
+    #[Test]
     #[DataProvider('nonStringTemplateProvider')]
-    public function testRejectsABodyTemplateThatIsNotAString(mixed $template, string $type): void
+    public function rejectsABodyTemplateThatIsNotAString(mixed $template, string $type): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("config[maintenance][body_template] must be a string, got {$type}.");
@@ -66,10 +70,11 @@ final class BodyTemplateLoaderTest extends TestCase
         (new BodyTemplateLoader())->resolve(['body_template' => $template]);
     }
 
-    public function testReturnsAnInlineBodyTemplateVerbatim(): void
+    #[Test]
+    public function returnsAnInlineBodyTemplateVerbatim(): void
     {
         $template = (new BodyTemplateLoader())->resolve(['body_template' => 'INLINE: %s']);
 
-        self::assertSame('INLINE: %s', $template);
+        static::assertSame('INLINE: %s', $template);
     }
 }

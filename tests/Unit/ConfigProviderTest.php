@@ -8,6 +8,7 @@ use Contenir\Maintenance\Mezzio\ConfigProvider;
 use Contenir\Maintenance\Mezzio\Factory\MaintenanceMiddlewareFactory;
 use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
@@ -15,31 +16,35 @@ use function array_keys;
 #[Group('unit')]
 final class ConfigProviderTest extends TestCase
 {
-    public function testContributesNoMaintenanceKeySoSiteConfigIsTheOnlySource(): void
+    #[Test]
+    public function contributesNoMaintenanceKeySoSiteConfigIsTheOnlySource(): void
     {
         $config = (new ConfigProvider())();
 
-        self::assertSame(['dependencies'], array_keys($config));
+        static::assertSame(['dependencies'], array_keys($config));
     }
 
-    public function testDefaultBodyTemplatePathPointsAtTheBundledTemplate(): void
+    #[Test]
+    public function defaultBodyTemplatePathPointsAtTheBundledTemplate(): void
     {
-        self::assertStringEndsWith('/templates/maintenance.phtml', ConfigProvider::defaultBodyTemplatePath());
+        static::assertStringEndsWith('/templates/maintenance.phtml', ConfigProvider::defaultBodyTemplatePath());
     }
 
-    public function testExposesTheDependenciesForDirectUse(): void
+    #[Test]
+    public function exposesTheDependenciesForDirectUse(): void
     {
-        self::assertSame(
+        static::assertSame(
             ['factories' => [MaintenanceMiddleware::class => MaintenanceMiddlewareFactory::class]],
             (new ConfigProvider())->getDependencies(),
         );
     }
 
-    public function testRegistersTheMiddlewareFactoryAsADependency(): void
+    #[Test]
+    public function registersTheMiddlewareFactoryAsADependency(): void
     {
         $config = (new ConfigProvider())();
 
-        self::assertSame(
+        static::assertSame(
             [MaintenanceMiddleware::class => MaintenanceMiddlewareFactory::class],
             $config['dependencies']['factories'],
         );

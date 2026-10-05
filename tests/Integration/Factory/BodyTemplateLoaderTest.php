@@ -11,6 +11,7 @@ use Contenir\Maintenance\Mezzio\Tests\Trait\TemporaryDirectoryTrait;
 use DomainException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -43,55 +44,61 @@ final class BodyTemplateLoaderTest extends TestCase
         ];
     }
 
-    public function testBundledTemplateHoldsExactlyOneMessagePlaceholder(): void
+    #[Test]
+    public function bundledTemplateHoldsExactlyOneMessagePlaceholder(): void
     {
         $template = (new BodyTemplateLoader())->resolve([]);
 
-        self::assertSame([1, 1], [substr_count($template, needle: '%'), substr_count($template, needle: '%s')]);
+        static::assertSame([1, 1], [substr_count($template, needle: '%'), substr_count($template, needle: '%s')]);
     }
 
-    public function testClosesItsOutputBufferWhenATemplateThrows(): void
+    #[Test]
+    public function closesItsOutputBufferWhenATemplateThrows(): void
     {
         $level = ob_get_level();
         $path  = $this->writeTemporaryFile('broken.phtml', 'partial<?php throw new DomainException("template broke");');
 
         try {
             $this->resolvePath($path);
-            self::fail('The template exception should propagate.');
+            static::fail('The template exception should propagate.');
         } catch (DomainException $exception) {
-            self::assertSame(['template broke', $level], [$exception->getMessage(), ob_get_level()]);
+            static::assertSame(['template broke', $level], [$exception->getMessage(), ob_get_level()]);
         }
     }
 
+    #[Test]
     #[DataProvider('phpExtensionProvider')]
-    public function testEvaluatesPhpTemplates(string $fileName): void
+    public function evaluatesPhpTemplates(string $fileName): void
     {
         $path = $this->writeTemporaryFile($fileName, '<p><?= strtoupper("hello") ?>: %s</p>');
 
-        self::assertSame('<p>HELLO: %s</p>', $this->resolvePath($path));
+        static::assertSame('<p>HELLO: %s</p>', $this->resolvePath($path));
     }
 
-    public function testLoadsTheBundledTemplateByDefault(): void
+    #[Test]
+    public function loadsTheBundledTemplateByDefault(): void
     {
         $template = (new BodyTemplateLoader())->resolve([]);
 
-        self::assertStringStartsWith('<!doctype html>', $template);
+        static::assertStringStartsWith('<!doctype html>', $template);
     }
 
-    public function testReadsANonPhpTemplateRaw(): void
+    #[Test]
+    public function readsANonPhpTemplateRaw(): void
     {
         $path = $this->writeTemporaryFile('maintenance.html', '<p>Raw <?= "php" ?>: %s</p>');
 
-        self::assertSame('<p>Raw <?= "php" ?>: %s</p>', $this->resolvePath($path));
+        static::assertSame('<p>Raw <?= "php" ?>: %s</p>', $this->resolvePath($path));
     }
 
-    public function testRejectsAFileThatCannotBeRead(): void
+    #[Test]
+    public function rejectsAFileThatCannotBeRead(): void
     {
         $path = $this->writeTemporaryFile('locked.html', '%s');
         chmod($path, permissions: 0o000);
 
         if (is_readable($path)) {
-            self::markTestSkipped('Running as a user that can read any file, so permissions cannot lock it.');
+            static::markTestSkipped('Running as a user that can read any file, so permissions cannot lock it.');
         }
 
         $this->expectException(RuntimeException::class);
@@ -100,7 +107,8 @@ final class BodyTemplateLoaderTest extends TestCase
         $this->resolvePath($path);
     }
 
-    public function testRejectsAPathThatDoesNotExist(): void
+    #[Test]
+    public function rejectsAPathThatDoesNotExist(): void
     {
         $path = $this->temporaryPath('missing.phtml');
 
@@ -110,7 +118,8 @@ final class BodyTemplateLoaderTest extends TestCase
         $this->resolvePath($path);
     }
 
-    public function testRejectsAPathThatIsADirectory(): void
+    #[Test]
+    public function rejectsAPathThatIsADirectory(): void
     {
         $path = $this->temporaryPath('templates.html');
         mkdir($path);
@@ -121,7 +130,8 @@ final class BodyTemplateLoaderTest extends TestCase
         $this->resolvePath($path);
     }
 
-    public function testRejectsATemplateThatCannotBeOpenedAfterPassingTheReadabilityChecks(): void
+    #[Test]
+    public function rejectsATemplateThatCannotBeOpenedAfterPassingTheReadabilityChecks(): void
     {
         $path = UnopenableFileStreamWrapper::PROTOCOL . '://template.html';
         UnopenableFileStreamWrapper::register();
@@ -136,17 +146,19 @@ final class BodyTemplateLoaderTest extends TestCase
         }
     }
 
-    public function testRendersPhpTemplatesWithoutAccessToLoaderScope(): void
+    #[Test]
+    public function rendersPhpTemplatesWithoutAccessToLoaderScope(): void
     {
         $path = $this->writeTemporaryFile(
             'scope.phtml',
             '<?= isset($maintenance) || isset($path) || isset($this) ? "leaked" : "isolated" ?>',
         );
 
-        self::assertSame('isolated', $this->resolvePath($path));
+        static::assertSame('isolated', $this->resolvePath($path));
     }
 
-    public function testRestoresTheErrorHandlerWhenOpeningATemplateThrows(): void
+    #[Test]
+    public function restoresTheErrorHandlerWhenOpeningATemplateThrows(): void
     {
         $handler = $this->currentErrorHandler();
         $path    = ThrowingFileStreamWrapper::PROTOCOL . '://template.html';
@@ -154,9 +166,9 @@ final class BodyTemplateLoaderTest extends TestCase
 
         try {
             $this->resolvePath($path);
-            self::fail('The stream exception should propagate.');
+            static::fail('The stream exception should propagate.');
         } catch (RuntimeException $exception) {
-            self::assertSame(
+            static::assertSame(
                 [ThrowingFileStreamWrapper::MESSAGE, $handler],
                 [$exception->getMessage(), $this->currentErrorHandler()],
             );
@@ -165,7 +177,8 @@ final class BodyTemplateLoaderTest extends TestCase
         }
     }
 
-    public function testSilencesTheWarningWhenATemplateCannotBeOpened(): void
+    #[Test]
+    public function silencesTheWarningWhenATemplateCannotBeOpened(): void
     {
         $path = UnopenableFileStreamWrapper::PROTOCOL . '://template.html';
         UnopenableFileStreamWrapper::register();
@@ -173,9 +186,9 @@ final class BodyTemplateLoaderTest extends TestCase
 
         try {
             $this->resolvePath($path);
-            self::fail('An unopenable template should be rejected.');
+            static::fail('An unopenable template should be rejected.');
         } catch (RuntimeException) {
-            self::assertNull(error_get_last());
+            static::assertNull(error_get_last());
         } finally {
             UnopenableFileStreamWrapper::unregister();
         }

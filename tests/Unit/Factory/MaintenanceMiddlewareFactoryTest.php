@@ -13,6 +13,7 @@ use Contenir\Maintenance\Repository\InMemoryRepository;
 use Laminas\Diactoros\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -81,43 +82,49 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         ];
     }
 
-    public function testAcceptsAStaticMethodCallableAsTheBypass(): void
+    #[Test]
+    public function acceptsAStaticMethodCallableAsTheBypass(): void
     {
         $response = $this->respond(['bypass' => [self::class, 'allowEveryRequest']]);
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testHandsTheBodyTemplateConfigToTheMiddleware(): void
+    #[Test]
+    public function handsTheBodyTemplateConfigToTheMiddleware(): void
     {
         $response = $this->respond(['body_template' => '<p>%s</p>'], 'Back soon');
 
-        self::assertSame('<p>Back soon</p>', (string) $response->getBody());
+        static::assertSame('<p>Back soon</p>', (string) $response->getBody());
     }
 
-    public function testIgnoresTheFileOptionWhenARepositoryIsRegistered(): void
+    #[Test]
+    public function ignoresTheFileOptionWhenARepositoryIsRegistered(): void
     {
         $response = $this->respond(['file' => ''], 'From the container');
 
-        self::assertSame('MAINT: From the container', (string) $response->getBody());
+        static::assertSame('MAINT: From the container', (string) $response->getBody());
     }
 
-    public function testLetsTheRequestThroughWhenTheBypassReturnsTrue(): void
+    #[Test]
+    public function letsTheRequestThroughWhenTheBypassReturnsTrue(): void
     {
         $response = $this->respond(['bypass' => static fn(ServerRequestInterface $request): bool => true]);
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
+    #[Test]
     #[DataProvider('nonTrueBypassResultProvider')]
-    public function testOnlyAStrictTrueFromTheBypassLetsTheRequestThrough(mixed $result): void
+    public function onlyAStrictTrueFromTheBypassLetsTheRequestThrough(mixed $result): void
     {
         $response = $this->respond(['bypass' => static fn(ServerRequestInterface $request): mixed => $result]);
 
-        self::assertSame(503, $response->getStatusCode());
+        static::assertSame(503, $response->getStatusCode());
     }
 
-    public function testRejectsABypassThatIsNotCallable(): void
+    #[Test]
+    public function rejectsABypassThatIsNotCallable(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('config[maintenance][bypass] must be callable or null.');
@@ -125,8 +132,9 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         $this->respond(['bypass' => 'not a callable string xyz']);
     }
 
+    #[Test]
     #[DataProvider('invalidFileProvider')]
-    public function testRejectsAFileOptionThatIsNotANonEmptyString(mixed $file): void
+    public function rejectsAFileOptionThatIsNotANonEmptyString(mixed $file): void
     {
         $container = new ArrayContainer([
             'config' => ['maintenance' => ['file' => $file, 'body_template' => '%s']],
@@ -138,8 +146,9 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         (new MaintenanceMiddlewareFactory())($container);
     }
 
+    #[Test]
     #[DataProvider('invalidRetryAfterProvider')]
-    public function testRejectsARetryAfterThatIsNotNumeric(mixed $retryAfter): void
+    public function rejectsARetryAfterThatIsNotNumeric(mixed $retryAfter): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('config[maintenance][retry_after] must be a number of seconds.');
@@ -147,33 +156,37 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         $this->respond(['retry_after' => $retryAfter]);
     }
 
+    #[Test]
     #[DataProvider('retryAfterProvider')]
-    public function testSendsTheConfiguredRetryAfter(int|float|string $retryAfter, string $expected): void
+    public function sendsTheConfiguredRetryAfter(int|float|string $retryAfter, string $expected): void
     {
         $response = $this->respond(['retry_after' => $retryAfter]);
 
-        self::assertSame($expected, $response->getHeaderLine('Retry-After'));
+        static::assertSame($expected, $response->getHeaderLine('Retry-After'));
     }
 
-    public function testSendsTheDefaultRetryAfterWhenNoneIsConfigured(): void
+    #[Test]
+    public function sendsTheDefaultRetryAfterWhenNoneIsConfigured(): void
     {
         $response = $this->respond([]);
 
-        self::assertSame('600', $response->getHeaderLine('Retry-After'));
+        static::assertSame('600', $response->getHeaderLine('Retry-After'));
     }
 
-    public function testTreatsANullBypassAsNoBypass(): void
+    #[Test]
+    public function treatsANullBypassAsNoBypass(): void
     {
         $response = $this->respond(['bypass' => null]);
 
-        self::assertSame(503, $response->getStatusCode());
+        static::assertSame(503, $response->getStatusCode());
     }
 
-    public function testUsesTheRepositoryRegisteredInTheContainer(): void
+    #[Test]
+    public function usesTheRepositoryRegisteredInTheContainer(): void
     {
         $response = $this->respond([], 'From the container');
 
-        self::assertSame('MAINT: From the container', (string) $response->getBody());
+        static::assertSame('MAINT: From the container', (string) $response->getBody());
     }
 
     /**

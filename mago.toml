@@ -13,11 +13,5 @@ parentheses-around-new-in-member-access = true
 [linter.rules]
 # The shared base excludes "test/"; this repository keeps its suites under "tests/".
 too-many-methods = { exclude = ["tests/"] }
-# The suites predate the #[Test] / static::assert*() convention and still use
-# behaviour-named test* methods with self::assert*(). Converting them is a
-# mechanical follow-up; until then these two rules would flag every test.
-prefer-test-attribute = { enabled = false }
-assertion-style = { enabled = false }
-
 [analyzer]
 excludes = ["tests"]

@@ -16,6 +16,7 @@ use Contenir\Maintenance\Repository\InMemoryRepository;
 use Laminas\Diactoros\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
@@ -42,7 +43,8 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         ];
     }
 
-    public function testAnchorsTheDefaultStateFileToTheWorkingDirectoryAtBuildTime(): void
+    #[Test]
+    public function anchorsTheDefaultStateFileToTheWorkingDirectoryAtBuildTime(): void
     {
         $this->changeWorkingDirectoryToTemporary();
         $file = $this->writeTemporaryFile('config/autoload/maintenance.local.php', '<?php return [];');
@@ -52,20 +54,22 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         mkdir($elsewhere);
         chdir($elsewhere);
 
-        self::assertSame(503, $this->dispatch($middleware)->getStatusCode());
+        static::assertSame(503, $this->dispatch($middleware)->getStatusCode());
     }
 
+    #[Test]
     #[DataProvider('missingConfigProvider')]
-    public function testBuildsWithDefaultsWhenTheSiteHasNoMaintenanceConfig(array $services): void
+    public function buildsWithDefaultsWhenTheSiteHasNoMaintenanceConfig(array $services): void
     {
         $this->changeWorkingDirectoryToTemporary();
 
         $response = $this->dispatch($this->build($services));
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testDefaultsToTheStateFileUnderTheWorkingDirectory(): void
+    #[Test]
+    public function defaultsToTheStateFileUnderTheWorkingDirectory(): void
     {
         $this->changeWorkingDirectoryToTemporary();
         $file = $this->writeTemporaryFile('config/autoload/maintenance.local.php', '<?php return [];');
@@ -73,19 +77,21 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
 
         $response = $this->dispatch($this->build(['config' => ['maintenance' => ['body_template' => '%s']]]));
 
-        self::assertSame(503, $response->getStatusCode());
+        static::assertSame(503, $response->getStatusCode());
     }
 
-    public function testDelegatesWhenTheStateFileDoesNotExist(): void
+    #[Test]
+    public function delegatesWhenTheStateFileDoesNotExist(): void
     {
         $response = $this->dispatch($this->build([
             'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => '%s']],
         ]));
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testFallsBackToARelativeStateFileWhenTheWorkingDirectoryIsGone(): void
+    #[Test]
+    public function fallsBackToARelativeStateFileWhenTheWorkingDirectoryIsGone(): void
     {
         $vanished = $this->temporaryPath('vanished');
         mkdir($vanished);
@@ -94,10 +100,11 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
 
         $response = $this->dispatch($this->build(['config' => ['maintenance' => ['body_template' => '%s']]]));
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testPicksUpToggledStateWithoutRebuildingTheMiddleware(): void
+    #[Test]
+    public function picksUpToggledStateWithoutRebuildingTheMiddleware(): void
     {
         $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');
         $middleware = $this->build([
@@ -110,10 +117,11 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         $this->saveState($this->stateFile(), MaintenanceState::inactive());
         $statuses[] = $this->dispatch($middleware)->getStatusCode();
 
-        self::assertSame([200, 503, 200], $statuses);
+        static::assertSame([200, 503, 200], $statuses);
     }
 
-    public function testPrefersARegisteredRepositoryOverTheStateFile(): void
+    #[Test]
+    public function prefersARegisteredRepositoryOverTheStateFile(): void
     {
         $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');
         $this->saveState($this->stateFile(), MaintenanceState::active('From the file'));
@@ -123,10 +131,11 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
             MaintenanceRepositoryInterface::class => new InMemoryRepository(),
         ]));
 
-        self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+        static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
-    public function testReadsTheNamespacedStateFileTheAdminWrites(): void
+    #[Test]
+    public function readsTheNamespacedStateFileTheAdminWrites(): void
     {
         $this->writeTemporaryFile(
             'shared/maintenance.local.php',
@@ -137,10 +146,11 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
             'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => 'MAINT: %s']],
         ]));
 
-        self::assertSame('MAINT: Written by the admin', (string) $response->getBody());
+        static::assertSame('MAINT: Written by the admin', (string) $response->getBody());
     }
 
-    public function testReadsTheStateFileNamedByTheFileOption(): void
+    #[Test]
+    public function readsTheStateFileNamedByTheFileOption(): void
     {
         $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');
         $this->saveState($this->stateFile(), MaintenanceState::active('Down for upgrade'));
@@ -149,16 +159,20 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
             'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => 'MAINT: %s']],
         ]));
 
-        self::assertSame([503, 'MAINT: Down for upgrade'], [$response->getStatusCode(), (string) $response->getBody()]);
+        static::assertSame([503, 'MAINT: Down for upgrade'], [
+            $response->getStatusCode(),
+            (string) $response->getBody(),
+        ]);
     }
 
-    public function testRendersTheBundledTemplateWhenNoBodyTemplateIsConfigured(): void
+    #[Test]
+    public function rendersTheBundledTemplateWhenNoBodyTemplateIsConfigured(): void
     {
         $response = $this->dispatch($this->build([
             MaintenanceRepositoryInterface::class => new InMemoryRepository(MaintenanceState::active('Back at noon')),
         ]));
 
-        self::assertStringContainsString('role="status">Back at noon</div>', (string) $response->getBody());
+        static::assertStringContainsString('role="status">Back at noon</div>', (string) $response->getBody());
     }
 
     protected function setUp(): void
