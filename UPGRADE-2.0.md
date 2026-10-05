@@ -47,3 +47,16 @@ API-compatible for reading.
 
 Projects that cannot move yet can stay on `^0.1`, which is maintained on the
 `0.x` branch.
+
+## Package renamed in 2.2
+
+From 2.2, the package is published as `contenir/contenir-maintenance-mezzio`. It declares
+`replace` for `contenir/maintenance-mezzio`, so the two can never be installed together.
+Its dependencies move to their renamed packages too: `contenir/contenir-maintenance`
+and `contenir/contenir-config`, both `^2.1`. Switch the requirement:
+
+```bash
+composer remove contenir/maintenance-mezzio && composer require contenir/contenir-maintenance-mezzio:^2.2
+```
+
+No code changes are needed: namespaces and classes are unchanged.

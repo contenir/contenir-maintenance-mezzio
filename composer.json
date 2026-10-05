@@ -1,12 +1,12 @@
 {
-    "name": "contenir/maintenance-mezzio",
-    "description": "Mezzio adapter for contenir/maintenance — PSR-15 middleware that answers every request with 503 while maintenance mode is active.",
+    "name": "contenir/contenir-maintenance-mezzio",
+    "description": "Mezzio adapter for contenir/contenir-maintenance — PSR-15 middleware that answers every request with 503 while maintenance mode is active.",
     "type": "library",
     "license": "MIT",
     "require": {
         "php": "~8.3.0 || ~8.4.0 || ~8.5.0",
-        "contenir/config": "^0.2 || ^2.0",
-        "contenir/maintenance": "^0.1.1 || ^2.0",
+        "contenir/contenir-config": "^2.1",
+        "contenir/contenir-maintenance": "^2.1",
         "laminas/laminas-diactoros": "^3.0",
         "psr/container": "^1.1 || ^2.0",
         "psr/http-message": "^1.1 || ^2.0",
@@ -16,6 +16,9 @@
         "infection/infection": "^0.34.1",
         "php-db/phpdb-qa-tools": "0.1.x-dev",
         "phpunit/phpunit": "^11.5.42"
+    },
+    "replace": {
+        "contenir/maintenance-mezzio": "self.version"
     },
     "autoload": {
         "psr-4": {
@@ -63,7 +66,7 @@
             "config-provider": "Contenir\\Maintenance\\Mezzio\\ConfigProvider"
         },
         "branch-alias": {
-            "dev-main": "2.1.x-dev"
+            "dev-main": "2.2.x-dev"
         }
     },
     "minimum-stability": "dev",

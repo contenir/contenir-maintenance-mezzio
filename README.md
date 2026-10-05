@@ -1,9 +1,11 @@
-# contenir/maintenance-mezzio
+# contenir/contenir-maintenance-mezzio
 
-[![Continuous Integration](https://github.com/contenir/maintenance-mezzio/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/contenir/maintenance-mezzio/actions/workflows/continuous-integration.yml)
-[![codecov](https://codecov.io/gh/contenir/maintenance-mezzio/graph/badge.svg)](https://codecov.io/gh/contenir/maintenance-mezzio)
+Formerly `contenir/maintenance-mezzio`; the old package is abandoned in favour of this one.
 
-Mezzio adapter for [`contenir/maintenance`](https://github.com/contenir/maintenance).
+[![Continuous Integration](https://github.com/contenir/contenir-maintenance-mezzio/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/contenir/contenir-maintenance-mezzio/actions/workflows/continuous-integration.yml)
+[![codecov](https://codecov.io/gh/contenir/contenir-maintenance-mezzio/graph/badge.svg)](https://codecov.io/gh/contenir/contenir-maintenance-mezzio)
+
+Mezzio adapter for [`contenir/contenir-maintenance`](https://github.com/contenir/contenir-maintenance).
 
 When the admin (Contenir CMS) toggles maintenance mode, this adapter's
 PSR-15 middleware answers every request in the consuming Site with a 503
@@ -12,7 +14,7 @@ response, until the flag is cleared.
 ## Requirements
 
 - PHP 8.3, 8.4 or 8.5
-- `contenir/maintenance` 0.1.1+ or 2.x, `contenir/config` 0.2 or 2.x
+- `contenir/contenir-maintenance` 2.1+, `contenir/contenir-config` 2.1+
 - `laminas/laminas-diactoros` 3.x and the PSR-7, PSR-11 and PSR-15 interfaces
 
 The 0.x releases remain available from the `0.x` branch and `v0.*` tags; see
@@ -21,7 +23,7 @@ The 0.x releases remain available from the `0.x` branch and `v0.*` tags; see
 ## Install
 
 ```bash
-composer require contenir/maintenance-mezzio
+composer require contenir/contenir-maintenance-mezzio
 ```
 
 ## Wire-up
