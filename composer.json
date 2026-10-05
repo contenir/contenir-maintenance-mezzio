@@ -1,0 +1,88 @@
+{
+    "name": "contenir/maintenance-mezzio",
+    "description": "Mezzio adapter for contenir/maintenance — PSR-15 middleware that answers every request with 503 while maintenance mode is active.",
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.3",
+        "contenir/config": "^0.1",
+        "contenir/maintenance": "^0.1",
+        "laminas/laminas-diactoros": "^3.0",
+        "psr/container": "^1.1 || ^2.0",
+        "psr/http-message": "^1.1 || ^2.0",
+        "psr/http-server-middleware": "^1.0"
+    },
+    "require-dev": {
+        "php-db/phpdb-qa-tools": "0.1.x-dev",
+        "phpunit/phpunit": "^11.5"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../contenir-maintenance",
+            "canonical": false,
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "../contenir-config",
+            "canonical": false,
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/contenir/maintenance"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/contenir/config"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Contenir\\Maintenance\\Mezzio\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Contenir\\Maintenance\\Mezzio\\Test\\": "test/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laminas": {
+            "config-provider": "Contenir\\Maintenance\\Mezzio\\ConfigProvider"
+        }
+    },
+    "scripts": {
+        "analyze": "mago analyze",
+        "check": [
+            "@quality",
+            "@test"
+        ],
+        "cs-check": [
+            "mago format --check",
+            "mago lint"
+        ],
+        "cs-fix": [
+            "mago format",
+            "mago lint --fix"
+        ],
+        "quality": [
+            "@cs-check",
+            "@analyze"
+        ],
+        "test": "phpunit --colors=always",
+        "test-coverage": "XDEBUG_MODE=coverage phpunit --colors=always --coverage-text",
+        "test:integration": "phpunit --colors=always --testsuite integration",
+        "test:unit": "phpunit --colors=always --testsuite unit"
+    }
+}

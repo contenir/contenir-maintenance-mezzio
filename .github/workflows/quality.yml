@@ -1,0 +1,91 @@
+name: Code Quality & Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        coverage: pcov
+        tools: composer:v2, mago
+
+    - name: Validate composer.json
+      run: composer validate --strict
+
+    # The path repositories point at sibling checkouts used for local
+    # development; they do not exist on the runner, where Composer resolves
+    # contenir/* from Packagist and the VCS fallbacks instead.
+    - name: Drop local path repositories
+      run: |
+        php -r '$c = json_decode(file_get_contents("composer.json"), true);
+        $c["repositories"] = array_values(array_filter($c["repositories"], fn ($r) => $r["type"] !== "path"));
+        file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");'
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('composer.json') }}
+        restore-keys: |
+          ${{ runner.os }}-php${{ matrix.php-version }}-composer-
+
+    - name: Install dependencies
+      run: composer update --prefer-dist --no-progress --no-interaction
+
+    - name: Check formatting and lint (Mago)
+      run: composer cs-check
+
+    - name: Static analysis (Mago)
+      if: success() || failure()
+      run: composer analyze
+
+    - name: Run unit tests
+      run: composer test:unit
+
+    - name: Run integration tests
+      run: composer test:integration
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        coverage: none
+        tools: composer:v2
+
+    - name: Drop local path repositories
+      run: |
+        php -r '$c = json_decode(file_get_contents("composer.json"), true);
+        $c["repositories"] = array_values(array_filter($c["repositories"], fn ($r) => $r["type"] !== "path"));
+        file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");'
+
+    - name: Install dependencies
+      run: composer update --prefer-dist --no-progress --no-interaction
+
+    - name: Security audit
+      run: composer audit --locked --abandoned=report
