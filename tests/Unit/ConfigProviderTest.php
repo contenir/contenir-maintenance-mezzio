@@ -27,6 +27,14 @@ final class ConfigProviderTest extends TestCase
         self::assertStringEndsWith('/templates/maintenance.phtml', ConfigProvider::defaultBodyTemplatePath());
     }
 
+    public function testExposesTheDependenciesForDirectUse(): void
+    {
+        self::assertSame(
+            ['factories' => [MaintenanceMiddleware::class => MaintenanceMiddlewareFactory::class]],
+            (new ConfigProvider())->getDependencies(),
+        );
+    }
+
     public function testRegistersTheMiddlewareFactoryAsADependency(): void
     {
         $config = (new ConfigProvider())();

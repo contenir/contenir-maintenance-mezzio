@@ -217,6 +217,7 @@ composer static-analysis   # mago analyze
 composer test              # unit suite: middleware and factory with in-memory doubles, no I/O
 composer test-integration  # integration suite: real template and state files in a temp directory
 composer test-coverage     # both suites, clover.xml for Codecov
+composer mutation-test     # Infection mutation testing over both suites
 ```
 
 ## License
