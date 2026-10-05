@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Contenir\Maintenance\Mezzio\Tests\Integration\Factory;
 
 use Contenir\Maintenance\Mezzio\Factory\BodyTemplateLoader;
+use Contenir\Maintenance\Mezzio\Tests\TestAsset\Stream\ThrowingFileStreamWrapper;
 use Contenir\Maintenance\Mezzio\Tests\TestAsset\Stream\UnopenableFileStreamWrapper;
 use Contenir\Maintenance\Mezzio\Tests\Trait\TemporaryDirectoryTrait;
 use DomainException;
@@ -14,9 +15,13 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 use function chmod;
+use function error_clear_last;
+use function error_get_last;
 use function is_readable;
 use function mkdir;
 use function ob_get_level;
+use function restore_error_handler;
+use function set_error_handler;
 use function sprintf;
 use function substr_count;
 
@@ -141,6 +146,41 @@ final class BodyTemplateLoaderTest extends TestCase
         self::assertSame('isolated', $this->resolvePath($path));
     }
 
+    public function testRestoresTheErrorHandlerWhenOpeningATemplateThrows(): void
+    {
+        $handler = $this->currentErrorHandler();
+        $path    = ThrowingFileStreamWrapper::PROTOCOL . '://template.html';
+        ThrowingFileStreamWrapper::register();
+
+        try {
+            $this->resolvePath($path);
+            self::fail('The stream exception should propagate.');
+        } catch (RuntimeException $exception) {
+            self::assertSame(
+                [ThrowingFileStreamWrapper::MESSAGE, $handler],
+                [$exception->getMessage(), $this->currentErrorHandler()],
+            );
+        } finally {
+            ThrowingFileStreamWrapper::unregister();
+        }
+    }
+
+    public function testSilencesTheWarningWhenATemplateCannotBeOpened(): void
+    {
+        $path = UnopenableFileStreamWrapper::PROTOCOL . '://template.html';
+        UnopenableFileStreamWrapper::register();
+        error_clear_last();
+
+        try {
+            $this->resolvePath($path);
+            self::fail('An unopenable template should be rejected.');
+        } catch (RuntimeException) {
+            self::assertNull(error_get_last());
+        } finally {
+            UnopenableFileStreamWrapper::unregister();
+        }
+    }
+
     protected function setUp(): void
     {
         $this->setUpTemporaryDirectory();
@@ -149,6 +189,14 @@ final class BodyTemplateLoaderTest extends TestCase
     protected function tearDown(): void
     {
         $this->tearDownTemporaryDirectory();
+    }
+
+    private function currentErrorHandler(): mixed
+    {
+        $handler = set_error_handler(null);
+        restore_error_handler();
+
+        return $handler;
     }
 
     private function resolvePath(string $path): string

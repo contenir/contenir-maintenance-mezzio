@@ -42,6 +42,19 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         ];
     }
 
+    public function testAnchorsTheDefaultStateFileToTheWorkingDirectoryAtBuildTime(): void
+    {
+        $this->changeWorkingDirectoryToTemporary();
+        $file = $this->writeTemporaryFile('config/autoload/maintenance.local.php', '<?php return [];');
+        $this->saveState($file, MaintenanceState::active('m'));
+        $middleware = $this->build(['config' => ['maintenance' => ['body_template' => '%s']]]);
+        $elsewhere  = $this->temporaryPath('elsewhere');
+        mkdir($elsewhere);
+        chdir($elsewhere);
+
+        self::assertSame(503, $this->dispatch($middleware)->getStatusCode());
+    }
+
     #[DataProvider('missingConfigProvider')]
     public function testBuildsWithDefaultsWhenTheSiteHasNoMaintenanceConfig(array $services): void
     {
