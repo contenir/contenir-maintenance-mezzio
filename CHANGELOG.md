@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - Unreleased
+
+### Changed
+
+- Renamed from `contenir/maintenance-mezzio` to `contenir/contenir-maintenance-mezzio`. The package
+  declares `replace` for the old name; require `contenir/contenir-maintenance-mezzio`
+  instead. See [UPGRADE-2.0.md](UPGRADE-2.0.md).
+- Requires the renamed `contenir/contenir-maintenance` and
+  `contenir/contenir-config` at `^2.1` (were `contenir/maintenance` and
+  `contenir/config`).
+
 ## [2.1.0] - Unreleased
 
 ### Added
