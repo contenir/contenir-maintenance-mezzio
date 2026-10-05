@@ -8,6 +8,8 @@ use Contenir\Maintenance\MaintenanceState;
 use Contenir\Maintenance\Mezzio\Middleware\MaintenanceMiddleware;
 use Contenir\Maintenance\Mezzio\Tests\TestAsset\Handler\StubRequestHandler;
 use Contenir\Maintenance\Repository\InMemoryRepository;
+use DateTimeImmutable;
+use DateTimeZone;
 use Laminas\Diactoros\ServerRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -112,6 +114,36 @@ final class MaintenanceMiddlewareTest extends TestCase
         );
 
         static::assertSame($expectedStatus, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function passesAnEmptySinceWhenTheStateHasNone(): void
+    {
+        $response = $this->process(
+            new MaintenanceState(
+                active: true,
+                message: 'Down',
+                since: null,
+            ),
+            bodyTemplate: '<p>%s</p><time datetime="%2$s"></time>',
+        );
+
+        static::assertSame('<p>Down</p><time datetime=""></time>', (string) $response->getBody());
+    }
+
+    #[Test]
+    public function passesTheSinceTimeToTheTemplateAsIso8601(): void
+    {
+        $since    = new DateTimeImmutable('2026-05-05 13:14:15', new DateTimeZone('Australia/Sydney'));
+        $response = $this->process(
+            MaintenanceState::active('Down', $since),
+            bodyTemplate: '<p>%1$s</p><time datetime="%2$s"></time>',
+        );
+
+        static::assertSame(
+            '<p>Down</p><time datetime="2026-05-05T13:14:15+10:00"></time>',
+            (string) $response->getBody(),
+        );
     }
 
     #[Test]

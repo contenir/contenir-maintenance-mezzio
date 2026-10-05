@@ -23,6 +23,7 @@ use Psr\Http\Message\ResponseInterface;
 use function chdir;
 use function mkdir;
 use function rmdir;
+use function var_export;
 
 #[Group('integration')]
 #[Group('factory')]
@@ -40,6 +41,21 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
             'config is not an array'      => [['config' => 'not an array']],
             'no maintenance key'          => [['config' => []]],
             'maintenance is not an array' => [['config' => ['maintenance' => 'on']]],
+        ];
+    }
+
+    /**
+     * @return array<string, array{mixed, string}>
+     */
+    public static function sinceProvider(): array
+    {
+        return [
+            'ISO 8601'     => ['2026-01-02T03:04:05+00:00', '2026-01-02T03:04:05+00:00'],
+            'other offset' => ['2026-01-02 13:04:05 +10:00', '2026-01-02T13:04:05+10:00'],
+            'missing'      => [null, ''],
+            'empty string' => ['', ''],
+            'not a string' => [1_767_323_045, ''],
+            'unparseable'  => ['not-a-date', ''],
         ];
     }
 
@@ -101,6 +117,24 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         $response = $this->dispatch($this->build(['config' => ['maintenance' => ['body_template' => '%s']]]));
 
         static::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
+    }
+
+    #[Test]
+    #[DataProvider('sinceProvider')]
+    public function passesTheStateFileSinceToTheTemplate(mixed $since, string $expected): void
+    {
+        $this->writeTemporaryFile(
+            'shared/maintenance.local.php',
+            "<?php return ['maintenance' => ['state' => ['active' => true, 'message' => 'Down', 'since' => "
+                . var_export($since, return: true)
+                . ']]];',
+        );
+
+        $response = $this->dispatch($this->build([
+            'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => '%s|%2$s']],
+        ]));
+
+        static::assertSame("Down|{$expected}", (string) $response->getBody());
     }
 
     #[Test]

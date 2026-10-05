@@ -6,6 +6,7 @@ namespace Contenir\Maintenance\Mezzio\Middleware;
 
 use Closure;
 use Contenir\Maintenance\MaintenanceRepositoryInterface;
+use DateTimeInterface;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Override;
 use Psr\Http\Message\ResponseInterface;
@@ -28,6 +29,11 @@ use const ENT_SUBSTITUTE;
  *   3. Otherwise: a 503 HTML response is returned with Retry-After and
  *      Cache-Control: no-store headers, and the configured body template
  *      (sprintf-style, single %s for the escaped admin message) as the body.
+ *
+ * The body template receives two arguments: the HTML-escaped message
+ * (`%s` or `%1$s`) and the `since` time as ISO 8601 (`%2$s`), which is an
+ * empty string when the state has no `since`. A template that only uses
+ * `%s` ignores the second argument.
  *
  * The repository is asked for the state on every request, so a toggle written
  * by the admin takes effect immediately without a config cache clear.
@@ -72,7 +78,9 @@ final readonly class MaintenanceMiddleware implements MiddlewareInterface
 
         $message = htmlspecialchars($state->message, ENT_QUOTES | ENT_SUBSTITUTE, encoding: 'UTF-8');
 
-        return new HtmlResponse(sprintf($this->bodyTemplate, $message), 503, [
+        $since = $state->since?->format(DateTimeInterface::ATOM) ?? '';
+
+        return new HtmlResponse(sprintf($this->bodyTemplate, $message, $since), 503, [
             'Retry-After'   => (string) $this->retryAfter,
             'Cache-Control' => 'no-store',
         ]);
