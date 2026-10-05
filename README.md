@@ -12,7 +12,7 @@ response, until the flag is cleared.
 ## Requirements
 
 - PHP 8.3, 8.4 or 8.5
-- `contenir/maintenance` 0.1 or 2.x, `contenir/config` 0.2 or 2.x
+- `contenir/maintenance` 0.1.1+ or 2.x, `contenir/config` 0.2 or 2.x
 - `laminas/laminas-diactoros` 3.x and the PSR-7, PSR-11 and PSR-15 interfaces
 
 The 0.x releases remain available from the `0.x` branch and `v0.*` tags; see

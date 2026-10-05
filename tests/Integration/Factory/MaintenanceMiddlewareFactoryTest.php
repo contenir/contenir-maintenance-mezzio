@@ -113,6 +113,20 @@ final class MaintenanceMiddlewareFactoryTest extends TestCase
         self::assertSame(StubRequestHandler::BODY, (string) $response->getBody());
     }
 
+    public function testReadsTheNamespacedStateFileTheAdminWrites(): void
+    {
+        $this->writeTemporaryFile(
+            'shared/maintenance.local.php',
+            "<?php return ['maintenance' => ['state' => ['active' => true, 'message' => 'Written by the admin']]];",
+        );
+
+        $response = $this->dispatch($this->build([
+            'config' => ['maintenance' => ['file' => $this->stateFile(), 'body_template' => 'MAINT: %s']],
+        ]));
+
+        self::assertSame('MAINT: Written by the admin', (string) $response->getBody());
+    }
+
     public function testReadsTheStateFileNamedByTheFileOption(): void
     {
         $this->writeTemporaryFile('shared/maintenance.local.php', '<?php return [];');

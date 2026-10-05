@@ -14,7 +14,10 @@ php-db QA toolchain and CI. See [UPGRADE-2.0.md](UPGRADE-2.0.md).
 
 - Requires PHP 8.3, 8.4 or 8.5 (`~8.3.0 || ~8.4.0 || ~8.5.0`; was `^8.3`).
 - `contenir/config` is required at `^0.2 || ^2.0` (was `^0.1`, which excluded
-  the current 0.2 release). `contenir/maintenance` accepts `^0.1 || ^2.0`.
+  the current 0.2 release). `contenir/maintenance` is required at
+  `^0.1.1 || ^2.0`: 0.1.0 reads a flat state file rather than the
+  `maintenance.state` shape the admin writes, so the adapter never saw
+  maintenance switched on with it.
 - `LICENSE` names Contenir as the copyright holder, in line with the other
   Contenir packages.
 - The local path and VCS repository entries are gone from `composer.json`;

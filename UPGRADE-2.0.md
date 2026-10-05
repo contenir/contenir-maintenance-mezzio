@@ -6,7 +6,7 @@ constraints change.
 | | 0.x | 2.0 |
 | --- | --- | --- |
 | PHP | ^8.3 | 8.3, 8.4 or 8.5 |
-| `contenir/maintenance` | ^0.1 | ^0.1 or ^2.0 |
+| `contenir/maintenance` | ^0.1 | ^0.1.1 or ^2.0 |
 | `contenir/config` | ^0.1 | ^0.2 or ^2.0 |
 
 To upgrade, update the constraint:
@@ -28,7 +28,9 @@ first. Error handlers that counted that warning will no longer see it.
 
 ## Dependency floors
 
-`contenir/config` 0.1 is no longer accepted. If another package pins it to
+`contenir/maintenance` 0.1.0 is no longer accepted: it reads a flat state
+file, not the `maintenance.state` shape the admin writes. `contenir/config`
+0.1 is no longer accepted either. If another package pins it to
 `^0.1`, update that package (or its constraint) first; 0.2 is
 API-compatible for reading.
 
