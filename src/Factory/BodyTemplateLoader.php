@@ -59,7 +59,7 @@ final class BodyTemplateLoader
     private static function unreadable(string $path): RuntimeException
     {
         return new RuntimeException(sprintf(
-            'contenir/maintenance-mezzio: body_template_path "%s" is not a readable file.',
+            'contenir/contenir-maintenance-mezzio: body_template_path "%s" is not a readable file.',
             $path,
         ));
     }
@@ -131,7 +131,7 @@ final class BodyTemplateLoader
     {
         if (! is_string($value)) {
             throw new RuntimeException(sprintf(
-                'contenir/maintenance-mezzio: config[maintenance][body_template] must be a string, got %s.',
+                'contenir/contenir-maintenance-mezzio: config[maintenance][body_template] must be a string, got %s.',
                 get_debug_type($value),
             ));
         }

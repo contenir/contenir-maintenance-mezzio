@@ -4,7 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.2.0] - Unreleased
+## [Unreleased]
+
+### Changed
+
+- Exception messages now name the package `contenir/contenir-maintenance-mezzio` instead of its pre-rename name.
+
+## [2.2.0] - 2026-10-05
 
 ### Changed
 
@@ -15,7 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   `contenir/contenir-config` at `^2.1` (were `contenir/maintenance` and
   `contenir/config`).
 
-## [2.1.0] - Unreleased
+## [2.1.0] - 2026-10-05
 
 ### Added
 
@@ -25,7 +31,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   ISO 8601, or an empty string when the state has no `since`. Templates that
   only use `%s` render exactly as before.
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-10-05
 
 The public API is unchanged. The major version aligns the package with the
 other Contenir 2.x packages: the same supported PHP versions, the shared
