@@ -66,7 +66,7 @@ final class MaintenanceMiddlewareFactory
 
         if (! is_callable($bypass)) {
             throw new RuntimeException(
-                'contenir/maintenance-mezzio: config[maintenance][bypass] must be callable or null.',
+                'contenir/contenir-maintenance-mezzio: config[maintenance][bypass] must be callable or null.',
             );
         }
 
@@ -97,7 +97,7 @@ final class MaintenanceMiddlewareFactory
 
         if (! is_string($file) || '' === $file) {
             throw new RuntimeException(
-                'contenir/maintenance-mezzio: config[maintenance][file] must be a non-empty string.',
+                'contenir/contenir-maintenance-mezzio: config[maintenance][file] must be a non-empty string.',
             );
         }
 
@@ -117,7 +117,7 @@ final class MaintenanceMiddlewareFactory
 
         if (! is_numeric($maintenance['retry_after'])) {
             throw new RuntimeException(
-                'contenir/maintenance-mezzio: config[maintenance][retry_after] must be a number of seconds.',
+                'contenir/contenir-maintenance-mezzio: config[maintenance][retry_after] must be a number of seconds.',
             );
         }
 
